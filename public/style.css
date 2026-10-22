@@ -1,0 +1,23 @@
+body {
+  font-family: sans-serif;
+  background: #0b1220;
+  color: #fff;
+  display: flex;
+  justify-content: center;
+  padding: 20px;
+}
+.box { width: 100%; max-width: 480px; }
+h2 { color: #00caff; }
+#chat {
+  background: #111b30;
+  border-radius: 12px;
+  padding: 12px;
+  height: 400px;
+  overflow-y: auto;
+  white-space: pre-wrap;
+}
+.you { text-align: right; color: #9ad; margin: 6px 0; }
+.alexa { color: #00caff; margin: 6px 0; }
+.row { display: flex; gap: 8px; margin-top: 10px; }
+input { flex: 1; padding: 10px; border-radius: 8px; border: none; }
+button { padding: 10px 16px; border: none; border-radius: 8px; background: #00caff; cursor: pointer; }
