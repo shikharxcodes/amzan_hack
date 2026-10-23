@@ -169,3 +169,9 @@ Tests cover task validation, preferences, workload calculations, plan approval, 
 - More personalized study planning.
 - Expanded automated tests and integrations.
 - User studies to measure productivity and learning outcomes.
+
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+Copyright © 2026 Shikhar Maurya.
