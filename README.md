@@ -1,177 +1,132 @@
-# StudyMate AI
-### Plan Smarter. Recover Faster. Stay in Control.
+# StudyMate
 
-**StudyMate AI is a personal study operations agent that helps students manage deadlines, build realistic study plans, and recover missed sessions.**
+### When a study plan breaks, build the next move.
 
-It uses saved academic data and deterministic planning to explain workload trade-offs, compare alternatives, and request approval before changing an approved plan.
+StudyMate helps students organize study tasks, plan exam preparation, understand workload risks, and recover from missed study sessions.
 
-## Key Features
+Built for the **Amazon Developer Hackathon 2026 — Alexa+ Track**, StudyMate exposes study operations through a self-hosted Model Context Protocol (MCP) server.
 
-- **Smart Study Planning:** Prioritizes saved tasks by deadlines and importance; identifies work that will not fit.
-- **Session Recovery:** Rebuilds plans from approved sessions, excluding completed tasks.
-- **What-If Planning:** Compares alternative study durations and subject priorities without silently changing approved plans.
-- **Deadline Risk Radar:** Compares user-entered task effort estimates against available study time.
-- **Exam & Task Management:** Tracks assignments, priorities, deadlines, exams, and completion status.
-- **Preferences & Reminders:** Saves study preferences and manages persistent in-app reminders.
-- **Approval-Based Changes:** Reviews proposed plans before approval; never silently completes assignments or moves deadlines.
-- **MCP Integration:** Exposes application tools through a self-hosted MCP server, demonstrated through a browser simulator.
-- **Optional AI Assistant:** Uses Gemini for general study questions; core planning works without an API key.
+> **Current status:** Planning and recovery use deterministic logic. AI/LLM integration is not currently implemented.
 
 ## Architecture
 
 ```mermaid
 flowchart TB
-    U(["STUDENT"])
+    U["Student"] <--> UI["StudyMate Web Workspace"]
 
-    subgraph FRONT["PRESENTATION LAYER"]
-        UI["StudyMate Web App<br/>7 Interactive Workspaces"]
-        SIM["MCP Tool Simulator"]
+    UI <--> API["Express Application"]
+    API <--> CORE["Study Operations Engine"]
+
+    subgraph ENGINE["Planning & Recovery"]
+        CORE --> TASKS["Tasks & Exams"]
+        CORE --> PLAN["Study Plan Proposals"]
+        PLAN --> RISK["Deadline Risk Radar"]
+        RISK --> REVIEW{"Student Review"}
+        REVIEW -->|Adjust| REC["Session Recovery"]
+        REC --> PLAN
     end
 
-    subgraph CORE["APPLICATION LAYER"]
-        API["Express API<br/>Validation & Routing"]
-        PLAN["Deterministic Study Planner"]
-        REC["Session Recovery<br/>& What-If Engine"]
-        APPROVE{"Student Approval"}
-        GEM["Optional Gemini API"]
-    end
+    CLIENT["MCP Client / Simulator"] <-->|Streamable HTTP| MCP["MCP Server"]
+    MCP <--> TOOLS["Registered MCP Tools"]
+    TOOLS <--> CORE
 
-    subgraph INTEGRATION["TOOL INTEGRATION"]
-        CLIENT["MCP SDK Client"]
-        MCP["MCP Server<br/>Streamable HTTP"]
-        TOOLS["Tasks · Exams<br/>Plan Proposals"]
-    end
+    CORE <--> DB[("Local JSON Storage")]
 
-    DB[("data.json<br/>Tasks · Exams · Preferences<br/>Plans · Outcomes · Reminders")]
+    classDef user fill:#172554,stroke:#60A5FA,color:#fff
+    classDef app fill:#164E63,stroke:#22D3EE,color:#fff
+    classDef engine fill:#312E81,stroke:#A5B4FC,color:#fff
+    classDef protocol fill:#064E3B,stroke:#34D399,color:#fff
+    classDef storage fill:#713F12,stroke:#FBBF24,color:#fff
 
-    U --> UI
-    UI <-->|REST API| API
-    API --> PLAN
-    PLAN --> REC
-    REC --> APPROVE
-    APPROVE -->|Approve| DB
-    APPROVE -->|Revise or Cancel| REC
-    DB -->|Saved State| PLAN
-    API -.->|Optional Questions| GEM
-    SIM --> CLIENT
-    CLIENT <-->|Tool Calls| MCP
-    MCP --> TOOLS
-    TOOLS <--> DB
-
-    classDef user fill:#172554,stroke:#60A5FA,color:#FFFFFF
-    classDef ui fill:#164E63,stroke:#22D3EE,color:#FFFFFF
-    classDef core fill:#312E81,stroke:#A5B4FC,color:#FFFFFF
-    classDef data fill:#14532D,stroke:#4ADE80,color:#FFFFFF
-    classDef integration fill:#713F12,stroke:#FBBF24,color:#FFFFFF
-
-    class U user
-    class UI,SIM ui
-    class API,PLAN,REC,APPROVE,GEM core
-    class DB data
-    class CLIENT,MCP,TOOLS integration
-
-    style FRONT fill:#0F172A,stroke:#38BDF8,color:#FFFFFF
-    style CORE fill:#111827,stroke:#818CF8,color:#FFFFFF
-    style INTEGRATION fill:#1C1917,stroke:#F59E0B,color:#FFFFFF
+    class U,UI user
+    class API app
+    class CORE,TASKS,PLAN,RISK,REVIEW,REC engine
+    class CLIENT,MCP,TOOLS protocol
+    class DB storage
 ```
 
-### Tech Stack
+## Key Features
 
-| Layer | Technology |
+| Feature | Purpose |
 |---|---|
-| Frontend | HTML, CSS, JavaScript |
-| Backend | Node.js, Express |
-| Planning | Deterministic planning and recovery logic |
-| Storage | Local JSON persistence |
-| AI | Optional Gemini API |
-| Integration | MCP TypeScript SDK, Streamable HTTP |
-| Testing | Node.js test suite |
+| Study Planning | Proposes plans based on task estimates and available time |
+| Deadline Risk Radar | Compares workload against available time |
+| Session Recovery | Replans around unfinished work |
+| Task & Exam Tracking | Organizes preparation |
+| Persistent State | Stores application data locally |
+| Student Approval | Keeps proposed changes under user control |
 
-## MCP Integration
-
-StudyMate AI implements a **self-hosted MCP server** and a browser simulator that invokes its actual `list_tasks` tool.
+## Alexa+ Track: MCP Integration
 
 **Endpoint:** `POST /mcp`
 
-**Tools:** `list_tasks`, `add_task`, `complete_task`, `propose_study_plan`, `list_exams`.
+| MCP Tool | Purpose |
+|---|---|
+| `list_tasks` | Retrieve tasks |
+| `add_task` | Add a task |
+| `complete_task` | Complete a task |
+| `propose_study_plan` | Propose a study plan |
+| `list_exams` | Retrieve exams |
 
-Automated tests cover MCP initialization, tool discovery, and tool calls over Streamable HTTP.
+MCP lets compatible clients discover and invoke structured application tools. The project currently provides a self-hosted MCP server and web demonstration; it is not a deployed Alexa+ device integration or an Amazon-certified Agent Skill.
 
-**Scope:** This is an MCP-backed web simulator, not a connected Alexa device or an official Alexa skill. The installed SDK advertises protocol version `2025-11-25`; verify the running server's negotiated version and event requirements before claiming compliance.
+## Tech Stack
 
-References: [Hackathon Rules](https://amazonappdev2026.devpost.com/rules) · [MCP Specification](https://modelcontextprotocol.io/specification/2025-11-25)
+Node.js · Express.js · MCP SDK · Zod · dotenv · HTML/CSS/JavaScript · JSON storage
 
-## Getting Started
+## Run Locally
 
 **Requirements:** Node.js 20+ and npm.
 
-### Install
-
-```powershell
+```bash
 git clone https://github.com/shikharxcodes/amzan_hack.git
 cd amzan_hack
-npm.cmd install
-if (!(Test-Path .env)) { Copy-Item .env.example .env }
-npm.cmd start
+npm install
+npm start
 ```
 
-Open [http://localhost:3000](http://localhost:3000).
+Open `http://localhost:3000` if using the default port.
 
 Run tests:
 
-```powershell
-npm.cmd test
+```bash
+npm test
 ```
 
-On macOS/Linux, use `npm` instead of `npm.cmd`; create `.env` with `cp .env.example .env`.
+## Judging Alignment
 
-### Configuration
-
-| Variable | Purpose |
+| Criterion | Project evidence |
 |---|---|
-| `GEMINI_API_KEY` | Optional Gemini API key |
-| `GEMINI_MODEL` | Configured Gemini model |
-| `STUDYMATE_TIMEZONE` | Defaults to `Asia/Kolkata` |
-| `STUDYMATE_DATA_FILE` | Defaults to `./data.json` |
-| `PORT` | Defaults to `3000` |
+| Technical Implementation | MCP tools and protocol interactions |
+| Design | Organized study workspace |
+| Potential Impact | Study planning and missed-session recovery |
+| Quality of Idea | A student-focused workflow exposed through MCP |
 
-Get an API key from [Google AI Studio](https://aistudio.google.com/app/apikey). Verify the configured model against the [Gemini model documentation](https://ai.google.dev/gemini-api/docs/models).
+These are intended areas of alignment, not guaranteed judging scores.
 
-**Never commit `.env` or expose API keys.**
+## Limitations & Next Steps
 
-## Three-Minute Demo
+- No AI/LLM integration currently.
+- Local JSON storage; designed for single-user use.
+- No production authentication or hosted deployment.
+- Future work: optional AI study assistance, multi-user storage, and additional integrations.
 
-1. Add an exam and study tasks with effort estimates; show the Deadline Risk Radar.
-2. Request a 60-minute study plan, inspect its reasoning, and approve it.
-3. Record a partially completed session and generate a recovery proposal.
-4. Compare a what-if plan, inspect the trade-offs, and approve one proposal.
-5. Open Activity / Integrations and run **Call `list_tasks` tool** to demonstrate MCP integration.
+## Developer Tool Feedback
 
-## Testing
+The submission should include honest feedback on the tools, APIs, and SDKs actually used, including the MCP SDK, Node.js, Express.js, and validation/configuration libraries.
 
-Run `npm test` (Windows PowerShell: `npm.cmd test`).
+## Judging Criteria Alignment
 
-Tests cover task validation, preferences, workload calculations, plan approval, stale proposals, reminders, persistence, recovery, Gemini fallback, and MCP initialization and tool calls.
+| Criterion | StudyMate's Strength |
+|---|---|
+| **Technical Implementation** | MCP server, tool discovery, structured tool calls |
+| **Design** | Organized, student-friendly study workspace |
+| **Potential Impact** | Practical study planning and session recovery |
+| **Quality of Idea** | Combines workload analysis, planning, and recovery |
 
-## Limitations
+**Engineering highlights:** Modular architecture · Explainable calculations · User-approved plans · Persistent state
 
-- **Storage:** Local JSON, single-user, without concurrent-write coordination.
-- **Reminders:** No background alerts while the application is closed.
-- **AI:** Gemini is optional and requires valid configuration.
-- **MCP deployment:** Local server; public hosting, HTTPS, and authentication are not configured.
-- **Voice:** Voice input/output are not implemented.
-- **Scale:** Multi-user deployment requires authenticated accounts and per-user database storage.
-- **Impact:** Productivity and learning outcomes have not yet been measured.
-
-## Future Improvements
-
-- Multi-user database and authentication.
-- More personalized study planning.
-- Expanded automated tests and integrations.
-- User studies to measure productivity and learning outcomes.
 
 ## License
 
-This project is licensed under the [MIT License](LICENSE).
-
-Copyright © 2026 Shikhar Maurya.
+[MIT License](LICENSE) · Copyright © 2026 Shikhar Maurya.
