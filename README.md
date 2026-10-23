@@ -139,7 +139,7 @@ Get an API key from [Google AI Studio](https://aistudio.google.com/app/apikey). 
 
 **Never commit `.env` or expose API keys.**
 
-## Two-Minute Demo
+## Three-Minute Demo
 
 1. Add an exam and study tasks with effort estimates; show the Deadline Risk Radar.
 2. Request a 60-minute study plan, inspect its reasoning, and approve it.
