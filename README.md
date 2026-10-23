@@ -6,44 +6,81 @@ StudyMate helps students organize study tasks, plan exam preparation, understand
 
 Built for the **Amazon Developer Hackathon 2026 — Alexa+ Track**, StudyMate exposes study operations through a self-hosted Model Context Protocol (MCP) server.
 
-> **Current status:** Planning and recovery use deterministic logic. AI/LLM integration is not currently implemented.
+>  **Current implementation:** StudyMate uses deterministic application logic for planning, recovery, and deadline calculations. An LLM or Gemini-powered assistant is not currently integrated.
 
-## Architecture
+
+StudyMate focuses on three practical questions:
+
+- **What needs to be done?** Organize tasks, exams, and estimated effort.
+- **What can realistically fit?** Compare workload with available study time.
+- **What happens when a plan breaks?** Propose a recovery plan around unfinished work.
+
+
+
+## System Architecture
+
+The architecture separates the user interface, application orchestration, study logic, MCP integration, and persistence. This keeps the study operations reusable without coupling them to one interface.
 
 ```mermaid
 flowchart TB
-    U["Student"] <--> UI["StudyMate Web Workspace"]
+    subgraph USER["01 · USER EXPERIENCE"]
+        U["Student"]
+        UI["StudyMate Web Workspace<br/>Tasks · Plans · Exams · Recovery"]
+        U <--> UI
+    end
 
-    UI <--> API["Express Application"]
-    API <--> CORE["Study Operations Engine"]
+    subgraph APP["02 · APPLICATION LAYER"]
+        API["Express Application<br/>HTTP Routes · Request Handling"]
+        VALID["Input Validation<br/>Structured Data"]
+        API <--> VALID
+    end
 
-    subgraph ENGINE["Planning & Recovery"]
-        CORE --> TASKS["Tasks & Exams"]
-        CORE --> PLAN["Study Plan Proposals"]
-        PLAN --> RISK["Deadline Risk Radar"]
-        RISK --> REVIEW{"Student Review"}
-        REVIEW -->|Adjust| REC["Session Recovery"]
+    subgraph CORE["03 · STUDY OPERATIONS ENGINE"]
+        direction TB
+        TASK["Task & Exam Management"]
+        PLAN["Study Plan Proposals"]
+        RISK["Deadline Risk Calculations"]
+        REC["Session Recovery"]
+        APPROVE["Proposal Review<br/>Student Approval"]
+        
+        TASK --> PLAN
+        PLAN --> RISK
+        RISK --> APPROVE
+        APPROVE -->|Approved plan| TASK
+        APPROVE -->|Recovery needed| REC
         REC --> PLAN
     end
 
-    CLIENT["MCP Client / Simulator"] <-->|Streamable HTTP| MCP["MCP Server"]
-    MCP <--> TOOLS["Registered MCP Tools"]
+    subgraph MCP["04 · MCP INTEGRATION"]
+        CLIENT["MCP Client / Simulator"]
+        SERVER["MCP Server<br/>Streamable HTTP"]
+        TOOLS["Registered Tools<br/>list_tasks · add_task<br/>complete_task<br/>propose_study_plan<br/>list_exams"]
+        CLIENT <-->|MCP Requests & Responses| SERVER
+        SERVER <--> TOOLS
+    end
+
+    subgraph DATA["05 · PERSISTENCE"]
+        STORE[("Local JSON Storage<br/>data.json")]
+    end
+
+    UI <--> API
+    VALID <--> CORE
     TOOLS <--> CORE
+    CORE <--> STORE
 
-    CORE <--> DB[("Local JSON Storage")]
-
-    classDef user fill:#172554,stroke:#60A5FA,color:#fff
-    classDef app fill:#164E63,stroke:#22D3EE,color:#fff
-    classDef engine fill:#312E81,stroke:#A5B4FC,color:#fff
-    classDef protocol fill:#064E3B,stroke:#34D399,color:#fff
-    classDef storage fill:#713F12,stroke:#FBBF24,color:#fff
+    classDef user fill:#172554,stroke:#60A5FA,color:#FFFFFF,stroke-width:2px
+    classDef app fill:#164E63,stroke:#22D3EE,color:#FFFFFF,stroke-width:2px
+    classDef core fill:#312E81,stroke:#A5B4FC,color:#FFFFFF,stroke-width:2px
+    classDef mcp fill:#064E3B,stroke:#34D399,color:#FFFFFF,stroke-width:2px
+    classDef data fill:#713F12,stroke:#FBBF24,color:#FFFFFF,stroke-width:2px
 
     class U,UI user
-    class API app
-    class CORE,TASKS,PLAN,RISK,REVIEW,REC engine
-    class CLIENT,MCP,TOOLS protocol
-    class DB storage
+    class API,VALID app
+    class TASK,PLAN,RISK,REC,APPROVE core
+    class CLIENT,SERVER,TOOLS mcp
+    class STORE data
 ```
+
 
 ## Key Features
 
@@ -69,6 +106,33 @@ flowchart TB
 | `list_exams` | Retrieve exams |
 
 MCP lets compatible clients discover and invoke structured application tools. The project currently provides a self-hosted MCP server and web demonstration; it is not a deployed Alexa+ device integration or an Amazon-certified Agent Skill.
+
+
+### MCP Communication
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant C as MCP Client / Simulator
+    participant S as StudyMate MCP Server
+    participant V as Validation
+    participant E as Study Operations Engine
+    participant D as Local Storage
+
+    C->>S: Initialize MCP session
+    S-->>C: Protocol capabilities
+    C->>S: Discover available tools
+    S-->>C: Tool definitions and schemas
+    C->>S: Call a supported tool
+    S->>V: Validate tool arguments
+    V->>E: Execute valid operation
+    E->>D: Read or update application state
+    D-->>E: Stored data or result
+    E-->>S: Operation result
+    S-->>C: MCP tool response
+```
+
+The sequence shows the intended interaction pattern. Actual responses and available capabilities depend on the implemented server.
 
 ## Tech Stack
 
@@ -130,3 +194,5 @@ The submission should include honest feedback on the tools, APIs, and SDKs actua
 ## License
 
 [MIT License](LICENSE) · Copyright © 2026 Shikhar Maurya.
+
+
