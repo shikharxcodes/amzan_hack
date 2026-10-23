@@ -1,2 +1,7 @@
 .env
+.env.*
+!.env.example
 node_modules
+data.json
+data.json.*.tmp
+data.json.corrupt-*

@@ -1,10 +1,11 @@
 {
-  "name": "amazon_hack",
+  "name": "studymate-ai",
   "version": "1.0.0",
-  "description": "",
+  "description": "Personal study operations agent with an Alexa+-style web simulator and self-hosted MCP server.",
   "main": "index.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "test": "node --test --test-concurrency=1"
   },
   "keywords": [],
   "author": "",
